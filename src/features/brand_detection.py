@@ -38,6 +38,15 @@ def extract_brand_impersonation_features(domain: str, full_url: str, brands: lis
     domain_lower = domain.lower()
     full_url_lower = full_url.lower()
 
+    if not domain_lower:
+        return {
+            "brand_max_similarity": 0.0,
+            "brand_impersonation_flag": 0,
+            "brand_in_subdomain": 0,
+            "brand_in_path": 0,
+            "impersonated_brand": None
+        }
+
     max_similarity = 0.0
     detected_brand = None
     is_impersonating = 0
@@ -46,7 +55,7 @@ def extract_brand_impersonation_features(domain: str, full_url: str, brands: lis
 
     # Clean domain to extract labels
     domain_clean = re.sub(r"^www\.", "", domain_lower)
-    domain_labels = domain_clean.split(".")
+    domain_labels = [lbl for lbl in domain_clean.split(".") if lbl]
     registered_domain = ".".join(domain_labels[-2:]) if len(domain_labels) >= 2 else domain_clean
 
     for brand in brands:
@@ -60,11 +69,11 @@ def extract_brand_impersonation_features(domain: str, full_url: str, brands: lis
             continue
 
         # Check alias similarity against registered domain core and tokens
-        core_domain = domain_labels[-2] if len(domain_labels) >= 2 else domain_labels[0]
-        core_tokens = [core_domain] + core_domain.split("-") + core_domain.split("_")
+        core_domain = domain_labels[-2] if len(domain_labels) >= 2 else (domain_labels[0] if domain_labels else "")
+        core_tokens = ([core_domain] + core_domain.split("-") + core_domain.split("_")) if core_domain else []
         for alias in aliases:
             # Substring exact check (e.g. paypal in paypal-login)
-            if alias in core_domain:
+            if core_domain and alias in core_domain:
                 max_similarity = 1.0
                 detected_brand = brand_name
                 is_impersonating = 1
@@ -72,6 +81,8 @@ def extract_brand_impersonation_features(domain: str, full_url: str, brands: lis
 
             # Token similarity check
             for tok in core_tokens:
+                if not tok:
+                    continue
                 sim = calculate_similarity(alias, tok)
                 if sim > max_similarity:
                     max_similarity = sim
@@ -81,13 +92,13 @@ def extract_brand_impersonation_features(domain: str, full_url: str, brands: lis
 
             # Check if brand alias appears in subdomains of a different registered domain
             subdomains = ".".join(domain_labels[:-2]) if len(domain_labels) > 2 else ""
-            if alias in subdomains:
+            if subdomains and alias in subdomains:
                 brand_in_subdomain = 1
                 detected_brand = brand_name
                 is_impersonating = 1
 
             # Check if brand alias appears in path of an unrelated domain
-            path_part = full_url_lower.split(domain_lower, 1)[-1] if domain_lower in full_url_lower else ""
+            path_part = full_url_lower.split(domain_lower, 1)[-1] if (domain_lower and domain_lower in full_url_lower) else ""
             if alias in path_part:
                 brand_in_path = 1
                 if not detected_brand:
