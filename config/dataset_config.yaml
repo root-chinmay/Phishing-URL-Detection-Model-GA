@@ -1,0 +1,29 @@
+# MobiURL-Guard Dataset Configuration
+dataset:
+  raw_path: "data/raw/dataset.csv"
+  benchmark_path: "data/processed/benchmark_urls.csv"
+  synthetic_path: "data/synthetic_test/synthetic_urls.csv"
+  url_column: "url"
+  label_column: "label"
+  positive_class: 1 # Malicious / Phishing
+  negative_class: 0 # Legitimate / Benign
+  label_mapping:
+    "malicious": 1
+    "phishing": 1
+    "bad": 1
+    "1": 1
+    1: 1
+    "benign": 0
+    "legitimate": 0
+    "good": 0
+    "safe": 0
+    "0": 0
+    0: 0
+  canonicalize_urls: true
+  drop_duplicates: true
+  stratify_split: true
+  split_ratios:
+    train: 0.70
+    calibration: 0.15
+    test: 0.15
+  random_seed: 42

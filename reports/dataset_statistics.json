@@ -1,0 +1,43 @@
+{
+  "dataset_filename": "dataset.csv",
+  "total_raw_records": 310,
+  "total_unique_records": 305,
+  "duplicate_records_removed": 5,
+  "number_of_columns": 5,
+  "column_names": [
+    "url",
+    "label",
+    "domain",
+    "category",
+    "is_synthetic"
+  ],
+  "data_types": {
+    "url": "object",
+    "label": "int64",
+    "domain": "object",
+    "category": "object",
+    "is_synthetic": "int64"
+  },
+  "missing_values": {
+    "url": 0,
+    "label": 0,
+    "domain": 0,
+    "category": 0,
+    "is_synthetic": 0
+  },
+  "class_distribution": {
+    "benign_count (0)": 150,
+    "malicious_count (1)": 155,
+    "benign_percentage": 49.18,
+    "malicious_percentage": 50.82
+  },
+  "scheme_statistics": {
+    "has_http_or_https_scheme": 305,
+    "missing_scheme_count": 0
+  },
+  "domain_diversity": {
+    "unique_registered_domains": 216,
+    "domain_to_url_ratio": 0.7082
+  },
+  "data_leakage_assessment": "Canonical URLs and base registered domains separated; domain grouping enforced during zero-day validation to eliminate intra-domain test leakage."
+}

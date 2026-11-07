@@ -1,0 +1,105 @@
+{
+  "version": "1.0.0",
+  "updated_at": "2026-11-07",
+  "description": "Configurable ground-truth brand database for detecting brand impersonation, homoglyphs, and unauthorized subdomain abuse.",
+  "brands": [
+    {
+      "name": "Google",
+      "domains": ["google.com", "google.co.uk", "google.co.in", "google.de", "google.fr", "accounts.google.com"],
+      "aliases": ["google", "googl", "gmail", "googledrive"],
+      "category": "Technology & Identity",
+      "risk_weight": 0.95
+    },
+    {
+      "name": "PayPal",
+      "domains": ["paypal.com", "paypal.me"],
+      "aliases": ["paypal", "pay-pal", "paypa1"],
+      "category": "Financial Services",
+      "risk_weight": 0.98
+    },
+    {
+      "name": "Microsoft",
+      "domains": ["microsoft.com", "live.com", "office.com", "outlook.com", "login.microsoftonline.com"],
+      "aliases": ["microsoft", "office365", "outlook", "msft", "onedrive"],
+      "category": "Enterprise & Cloud",
+      "risk_weight": 0.95
+    },
+    {
+      "name": "Apple",
+      "domains": ["apple.com", "icloud.com", "appleid.apple.com"],
+      "aliases": ["apple", "icloud", "appleid", "itunes"],
+      "category": "Consumer Technology",
+      "risk_weight": 0.96
+    },
+    {
+      "name": "Amazon",
+      "domains": ["amazon.com", "amazon.co.uk", "amazon.de", "amazon.in", "aws.amazon.com"],
+      "aliases": ["amazon", "primevideo", "amazn"],
+      "category": "E-Commerce & Cloud",
+      "risk_weight": 0.92
+    },
+    {
+      "name": "Facebook / Meta",
+      "domains": ["facebook.com", "meta.com", "instagram.com", "whatsapp.com"],
+      "aliases": ["facebook", "faceb00k", "instagram", "whatsapp"],
+      "category": "Social Media",
+      "risk_weight": 0.90
+    },
+    {
+      "name": "Netflix",
+      "domains": ["netflix.com"],
+      "aliases": ["netflix", "netflx", "netf1ix"],
+      "category": "Streaming Entertainment",
+      "risk_weight": 0.88
+    },
+    {
+      "name": "Bank of America",
+      "domains": ["bankofamerica.com", "bofa.com"],
+      "aliases": ["bankofamerica", "bofa", "bofamerica"],
+      "category": "Banking",
+      "risk_weight": 0.99
+    },
+    {
+      "name": "Chase",
+      "domains": ["chase.com"],
+      "aliases": ["chase", "chasebank", "jpmorganchase"],
+      "category": "Banking",
+      "risk_weight": 0.99
+    },
+    {
+      "name": "Wells Fargo",
+      "domains": ["wellsfargo.com"],
+      "aliases": ["wellsfargo", "wells-fargo"],
+      "category": "Banking",
+      "risk_weight": 0.99
+    },
+    {
+      "name": "Dropbox",
+      "domains": ["dropbox.com"],
+      "aliases": ["dropbox", "drop-box"],
+      "category": "Cloud Storage",
+      "risk_weight": 0.85
+    },
+    {
+      "name": "LinkedIn",
+      "domains": ["linkedin.com"],
+      "aliases": ["linkedin", "linked-in"],
+      "category": "Professional Social",
+      "risk_weight": 0.87
+    },
+    {
+      "name": "Coinbase",
+      "domains": ["coinbase.com"],
+      "aliases": ["coinbase", "c0inbase"],
+      "category": "Cryptocurrency Exchange",
+      "risk_weight": 0.97
+    },
+    {
+      "name": "Binance",
+      "domains": ["binance.com"],
+      "aliases": ["binance", "binan-ce"],
+      "category": "Cryptocurrency Exchange",
+      "risk_weight": 0.97
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "name": "MobiURL-Guard - Malicious URL & Phishing Detection",
+  "description": "An explainable, calibrated, adversarially robust, and privacy-aware mobile and web malicious URL detection framework.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

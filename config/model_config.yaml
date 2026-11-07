@@ -1,0 +1,37 @@
+# MobiURL-Guard Model Configuration
+model:
+  version: "1.0.0"
+  architecture: "ensemble_calibrated_tree"
+  student_architecture: "compact_distilled_decision_tree"
+  random_seed: 42
+
+features:
+  lexical: true
+  domain: true
+  entropy: true
+  unicode_homoglyphs: true
+  brand_impersonation: true
+  message_context: true
+
+calibration:
+  method: "isotonic" # "isotonic" or "sigmoid" (Platt scaling)
+  n_bins: 10
+  evaluate_brier_score: true
+  evaluate_ece: true
+
+conformal_prediction:
+  method: "split_conformal"
+  nominal_coverage: 0.95 # 1 - alpha (alpha = 0.05)
+  supported_alphas: [0.10, 0.05, 0.01] # 90%, 95%, 99%
+  finite_sample_correction: true
+
+thresholds:
+  malicious_cutoff: 0.65
+  safe_cutoff: 0.35
+  uncertain_margin: 0.15 # When predictions fall between 0.35 and 0.65 or conformal set is multi-class
+  ood_threshold_distance: 3.5
+
+mobile_constraints:
+  max_model_size_kb: 500
+  target_inference_latency_ms: 15
+  require_offline_eval: true

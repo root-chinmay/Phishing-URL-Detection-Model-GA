@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mobiurl-guard"
+version = "1.0.0"
+authors = [
+  { name="Chinmay", email="chinmayit25@gmail.com" },
+]
+description = "An Explainable, Calibrated, Adversarially Robust and Privacy-Aware Mobile Malicious URL Detection Framework"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Security",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence"
+]
+dependencies = [
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+    "pandas>=1.5.0",
+    "scikit-learn>=1.2.0",
+    "pyyaml>=6.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.2.0"
+]
