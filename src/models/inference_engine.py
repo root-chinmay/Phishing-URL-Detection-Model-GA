@@ -36,6 +36,9 @@ class MobiURLGuardInferenceEngine:
         feat_dict = extract_url_feature_dict(url_clean)
         msg_feats = extract_message_features(message_text)
 
+        import time
+        t_start = time.perf_counter()
+
         # 1. Base prediction
         if self.interpreter is not None:
             raw_prob = self.interpreter.predict_proba_single(feat_vector)
@@ -108,6 +111,8 @@ class MobiURLGuardInferenceEngine:
         if msg_feats["has_message_context"] == 1:
             modalities.append("message_context")
 
+        processing_time_ms = round((time.perf_counter() - t_start) * 1000, 3)
+
         return {
             "url": url_clean,
             "classification": classification,
@@ -121,6 +126,8 @@ class MobiURLGuardInferenceEngine:
             "out_of_distribution": is_ood,
             "available_modalities": modalities,
             "top_reasons": top_reasons,
+            "top_risk_factors": top_reasons,
+            "processing_time_ms": processing_time_ms,
             "feature_summary": {
                 "length": feat_dict.get("url_length"),
                 "entropy": feat_dict.get("entropy_url"),

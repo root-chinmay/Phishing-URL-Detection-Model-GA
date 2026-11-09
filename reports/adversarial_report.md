@@ -1,15 +1,15 @@
 # Adversarial Robustness & Evasion Evaluation Report
 
 **Framework**: MobiURL-Guard Security Engine  
-**Clean Malicious Recall**: **96.7%** (29/30)  
+**Clean Malicious Recall**: **70.0%** (21/30)  
 
 | Adversarial Mutation Strategy | Samples Tested | Detected Malicious | Flagged Uncertain | Evasion Rate | Robustness Assessment |
 |---|---|---|---|---|---|
-| **Homoglyph Attack** | 30 | 29 (96.7%) | 1 (3.3%) | **0.0%** | Resilient |
-| **Subdomain Injection** | 30 | 30 (100.0%) | 0 (0.0%) | **0.0%** | Resilient |
-| **Percent Obfuscation** | 30 | 21 (70.0%) | 1 (3.3%) | **26.7%** | Moderate Evasion |
-| **Typosquatting** | 30 | 29 (96.7%) | 1 (3.3%) | **0.0%** | Resilient |
-| **Nested Redirect** | 30 | 28 (93.3%) | 2 (6.7%) | **0.0%** | Resilient |
+| **Homoglyph Attack** | 30 | 19 (63.3%) | 6 (20.0%) | **16.7%** | Moderate Evasion |
+| **Subdomain Injection** | 30 | 27 (90.0%) | 3 (10.0%) | **0.0%** | Resilient |
+| **Percent Obfuscation** | 30 | 27 (90.0%) | 2 (6.7%) | **3.3%** | Resilient |
+| **Typosquatting** | 30 | 21 (70.0%) | 3 (10.0%) | **20.0%** | Moderate Evasion |
+| **Nested Redirect** | 30 | 25 (83.3%) | 3 (10.0%) | **6.7%** | Resilient |
 
 ## Defense Mechanism Analysis
 

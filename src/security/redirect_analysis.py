@@ -34,9 +34,12 @@ def analyze_redirect_risk_offline(url: str) -> dict:
 
     return {
         "is_shortener": is_shortener,
+        "is_known_shortener": is_shortener,
         "has_redirect_parameters": has_redirect_lure,
+        "has_redirect_param": has_redirect_lure,
         "redirect_parameters_found": found_params,
         "potential_embedded_target": embedded_target,
+        "embedded_urls": [embedded_target] if embedded_target else [],
         "risk_explanation": (
             "URL uses a known link shortener which masks the final destination." if is_shortener
             else ("URL contains potential open-redirect parameters." if has_redirect_lure

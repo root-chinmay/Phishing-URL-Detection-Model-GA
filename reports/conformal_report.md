@@ -1,16 +1,22 @@
-# Conformal Prediction & Uncertainty Quantification Report
+# Conformal Prediction & Uncertainty Quantification Report (Research Gap 6)
 
-**Objective**: Provide mathematically grounded prediction sets under finite-sample guarantee (1 - alpha).  
-**Calibration Scheme**: Split Conformal Prediction with finite-sample quantile correction.  
+**Objective**: Provide mathematically guaranteed prediction sets with finite-sample coverage (1 - alpha).  
+**Method**: Split Conformal Prediction with quantile correction on held-out calibration partition.  
 
-| Target Coverage (1 - alpha) | Empirical Coverage on Test | Avg Prediction Set Size | Uncertainty Rate ({Legit, Phish}) | Calibrated Quantile q_hat |
+---
+
+## 1. Conformal Coverage & Prediction Set Metrics
+
+| Nominal Confidence (1 - alpha) | Empirical Coverage on Test | Average Set Size | Uncertainty Rate ({Legitimate, Malicious}) | Quantile Threshold q_hat |
 |---|---|---|---|---|
-| **90.0%** (alpha=0.10) | **97.9%** | 1.00 | 0.0% | 0.0476 |
-| **95.0%** (alpha=0.05) | **97.9%** | 1.00 | 0.0% | 0.0476 |
-| **99.0%** (alpha=0.01) | **100.0%** | 1.60 | 59.6% | 0.9524 |
+| **90.0%** (alpha=0.10) | **92.3%** | 1.08 | 8.2% | 0.6200 |
+| **95.0%** (alpha=0.05) | **95.5%** | 1.18 | 18.0% | 0.6701 |
+| **99.0%** (alpha=0.01) | **99.0%** | 1.49 | 48.8% | 0.9384 |
 
-## Interpretation of Prediction Sets
+---
 
-- **`{Legitimate}`**: Confidently safe URL with non-conformity exceeding bounds for maliciousness.
-- **`{Malicious}`**: Confidently malicious URL with verified threat indicators.
-- **`{Legitimate, Malicious}`**: **Uncertain / Insufficient Evidence**. Conformal coverage requires including both hypotheses at target confidence level. The mobile UI displays 'Unable to determine this URL reliably. Exercise caution.'
+## 2. Operational Semantics in MobiURL-Guard
+
+- **`{Legitimate}`**: Confidently benign URL. Safe to proceed with normal navigation.
+- **`{Malicious}`**: Confidently malicious phishing/threat URL. Immediate warning and navigation block.
+- **`{Legitimate, Malicious}`**: **Uncertain / Insufficient Evidence**. Conformal theory dictates that evidence is ambiguous under the selected confidence level. The mobile application alerts the user: *"Unable to classify this URL with high confidence. Proceed with caution."*

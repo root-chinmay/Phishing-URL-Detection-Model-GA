@@ -57,7 +57,16 @@ def calibrate_model(base_model, X_calib: np.ndarray, y_calib: np.ndarray, method
     """
     Fit post-hoc calibration on separate calibration partition.
     method: 'isotonic' (non-parametric) or 'sigmoid' (Platt scaling).
+    Compatible with scikit-learn >= 1.5 (FrozenEstimator) and legacy (<1.5 cv='prefit').
     """
-    calibrated = CalibratedClassifierCV(estimator=base_model, method=method, cv="prefit")
+    try:
+        from sklearn.frozen import FrozenEstimator
+        calibrated = CalibratedClassifierCV(estimator=FrozenEstimator(base_model), method=method)
+    except ImportError:
+        try:
+            calibrated = CalibratedClassifierCV(estimator=base_model, method=method, cv="prefit")
+        except Exception:
+            calibrated = CalibratedClassifierCV(estimator=base_model, method=method, cv=2)
+
     calibrated.fit(X_calib, y_calib)
     return calibrated

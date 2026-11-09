@@ -8,12 +8,13 @@ def canonicalize_url(url: str) -> str:
     if not isinstance(url, str):
         return ""
     url = url.strip()
-    if not url.startswith("http://") and not url.startswith("https://"):
+    if not re.match(r"^https?://", url, re.IGNORECASE):
         url = "http://" + url
     parsed = urlparse(url)
+    scheme = parsed.scheme.lower()
     hostname = (parsed.hostname or "").lower()
     path = parsed.path.rstrip("/")
-    canonical = f"{parsed.scheme}://{hostname}{path}"
+    canonical = f"{scheme}://{hostname}{path}"
     if parsed.query:
         canonical += f"?{parsed.query}"
     return canonical
@@ -22,6 +23,8 @@ def extract_registered_domain(url: str) -> str:
     """Extract base registered domain for domain-disjoint splitting."""
     parsed = urlparse(url if "://" in url else f"http://{url}")
     hostname = (parsed.hostname or "").lower()
+    if re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", hostname):
+        return hostname
     parts = hostname.split(".")
     if len(parts) >= 2:
         return ".".join(parts[-2:])
