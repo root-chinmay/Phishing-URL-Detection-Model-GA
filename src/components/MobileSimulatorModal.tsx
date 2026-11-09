@@ -78,7 +78,7 @@ export const MobileSimulatorModal: React.FC<MobileSimulatorModalProps> = ({
                   <Shield className="w-3 h-3" />
                 </div>
               )}
-              <span className="font-bold text-xs text-white tracking-tight">MobiURL-Guard</span>
+              <span className="font-bold text-xs text-white tracking-tight">URL Threat Detection</span>
             </div>
             <div className="flex items-center space-x-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />

@@ -17,7 +17,7 @@ if HAS_KIVY:
 
     class MobiURLGuardApp(App):
         def build(self):
-            self.title = "MobiURL-Guard"
+            self.title = "URL Threat Detection"
             self.controller = MobiURLMobileController()
             return build_kivy_screen_manager(self.controller)
 
@@ -36,7 +36,7 @@ def run_mobile_app():
 
 def run_cli_demo():
     print("=" * 65)
-    print("MOBIURL-GUARD MOBILE ANDROID INTERFACE DEMO (OFFLINE RUNTIME)")
+    print("URL THREAT DETECTION MOBILE ANDROID INTERFACE DEMO (OFFLINE RUNTIME)")
     print("=" * 65)
     controller = MobiURLMobileController()
 

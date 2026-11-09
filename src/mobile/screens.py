@@ -136,7 +136,7 @@ if HAS_KIVY:
 
             # Header
             header = Label(
-                text="[b]MobiURL-Guard[/b]\n[size=12]Offline Mobile Threat Defense[/size]",
+                text="[b]URL Threat Detection[/b]\n[size=12]Offline Mobile Threat Defense[/size]",
                 markup=True, size_hint_y=0.2, halign="center"
             )
             layout.add_widget(header)

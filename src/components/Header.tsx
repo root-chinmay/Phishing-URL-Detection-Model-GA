@@ -1,9 +1,9 @@
 import React from 'react';
-import { Shield, Smartphone, Zap, Github, Terminal, ExternalLink } from 'lucide-react';
+import { Shield, Smartphone, Zap, Terminal, ExternalLink } from 'lucide-react';
 
 interface HeaderProps {
   onOpenMobileSim: () => void;
-  onOpenDeploy: () => void;
+  onOpenDeploy?: () => void;
   activeTab: 'scanner' | 'benchmarks' | 'adversarial';
   setActiveTab: (tab: 'scanner' | 'benchmarks' | 'adversarial') => void;
 }
@@ -25,7 +25,7 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <span className="font-bold text-lg text-white tracking-tight">MobiURL-Guard</span>
+                <span className="font-bold text-lg text-white tracking-tight">URL Threat Detection</span>
                 <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
                   v1.0.0 Research Edition
                 </span>
@@ -79,14 +79,6 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Smartphone className="w-3.5 h-3.5" />
               <span>Mobile App Preview</span>
-            </button>
-
-            <button
-              onClick={onOpenDeploy}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:opacity-90 shadow-md shadow-blue-500/20 transition-all cursor-pointer"
-            >
-              <Github className="w-3.5 h-3.5" />
-              <span>Git & Vercel</span>
             </button>
           </div>
         </div>
