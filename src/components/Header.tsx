@@ -24,9 +24,6 @@ export const Header: React.FC<HeaderProps> = ({
             <div>
               <div className="flex items-center space-x-2">
                 <span className="font-bold text-lg text-white tracking-tight">URL Threat Detection</span>
-                <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                  v1.0.0 Research Edition
-                </span>
               </div>
               <p className="text-xs text-slate-400 hidden sm:block">
                 Explainable, Calibrated & Adversarially Robust Mobile Malicious URL Detection
