@@ -1,5 +1,5 @@
 /**
- * MobiURL-Guard Client-Side Edge Detection Engine
+ * URL Threat Detection Client-Side Edge Detection Engine
  * Matches Python research model with 100% offline edge execution.
  */
 

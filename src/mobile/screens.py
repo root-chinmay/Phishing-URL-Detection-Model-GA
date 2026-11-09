@@ -1,5 +1,5 @@
 """
-MobiURL-Guard Kivy Screen Architecture
+URL Threat Detection Kivy Screen Architecture
 Defines the 7 required screens for the Android mobile application:
 1. HomeDashboardScreen
 2. URLAnalysisScreen
@@ -77,15 +77,15 @@ class SettingsScreen:
         self.name = "settings"
 
 
-class MobiURLMobileController:
+class URLThreatMobileController:
     """
     Central Mobile Application State & Navigation Controller.
-    Interacts with the offline MobiURLGuardInferenceEngine.
+    Interacts with the offline URLThreatDetectionInferenceEngine.
     """
     def __init__(self, engine=None):
         if engine is None:
-            from src.models.inference_engine import MobiURLGuardInferenceEngine
-            self.engine = MobiURLGuardInferenceEngine()
+            from src.models.inference_engine import URLThreatDetectionInferenceEngine
+            self.engine = URLThreatDetectionInferenceEngine()
         else:
             self.engine = engine
 
@@ -257,3 +257,8 @@ Processing Time: {res.get('processing_time_ms', 1.0)} ms"""
         sm.add_widget(KivyRiskAssessment(controller))
         sm.add_widget(KivyExplanationScreen(controller))
         return sm
+
+
+# Alias for backward compatibility
+MobiURLMobileController = URLThreatMobileController
+

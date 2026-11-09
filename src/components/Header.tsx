@@ -1,16 +1,14 @@
 import React from 'react';
-import { Shield, Smartphone, Zap, Terminal, ExternalLink } from 'lucide-react';
+import { Shield, Smartphone } from 'lucide-react';
 
 interface HeaderProps {
   onOpenMobileSim: () => void;
-  onOpenDeploy?: () => void;
   activeTab: 'scanner' | 'benchmarks' | 'adversarial';
   setActiveTab: (tab: 'scanner' | 'benchmarks' | 'adversarial') => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onOpenMobileSim,
-  onOpenDeploy,
   activeTab,
   setActiveTab
 }) => {

@@ -1,5 +1,5 @@
 """
-MobiURL-Guard Android Application Entry Point
+URL Threat Detection Android Application Entry Point
 Built with Python & Kivy for 100% offline edge inference on Android mobile devices.
 """
 import sys
@@ -8,18 +8,20 @@ import os
 os.environ["KIVY_NO_ARGS"] = "1"
 
 sys.path.insert(0, os.path.abspath("."))
-from src.models.inference_engine import MobiURLGuardInferenceEngine
-from src.mobile.screens import MobiURLMobileController, HAS_KIVY
+from src.models.inference_engine import URLThreatDetectionInferenceEngine, MobiURLGuardInferenceEngine
+from src.mobile.screens import URLThreatMobileController, MobiURLMobileController, HAS_KIVY
 
 if HAS_KIVY:
     from kivy.app import App
     from src.mobile.screens import build_kivy_screen_manager
 
-    class MobiURLGuardApp(App):
+    class URLThreatDetectionApp(App):
         def build(self):
             self.title = "URL Threat Detection"
-            self.controller = MobiURLMobileController()
+            self.controller = URLThreatMobileController()
             return build_kivy_screen_manager(self.controller)
+
+    MobiURLGuardApp = URLThreatDetectionApp
 
 def run_mobile_app():
     """Launch mobile application or run demo suite if headless."""
@@ -27,7 +29,7 @@ def run_mobile_app():
         run_cli_demo()
     elif HAS_KIVY and os.environ.get("HEADLESS") != "1":
         try:
-            MobiURLGuardApp().run()
+            URLThreatDetectionApp().run()
         except Exception as e:
             print(f"[Mobile] GUI initialization fallback: {e}")
             run_cli_demo()
@@ -38,7 +40,7 @@ def run_cli_demo():
     print("=" * 65)
     print("URL THREAT DETECTION MOBILE ANDROID INTERFACE DEMO (OFFLINE RUNTIME)")
     print("=" * 65)
-    controller = MobiURLMobileController()
+    controller = URLThreatMobileController()
 
     sample_urls = [
         "https://www.google.com/search?q=cybersecurity+defense",

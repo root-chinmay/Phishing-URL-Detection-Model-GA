@@ -6,9 +6,9 @@ from src.features.message_features import extract_message_features
 from src.explainability.local_explainer import generate_local_explanation
 from src.models.student_model import LightweightTreeInterpreter
 
-class MobiURLGuardInferenceEngine:
+class URLThreatDetectionInferenceEngine:
     """
-    Unified MobiURL-Guard Mobile & Research Inference Engine.
+    Unified URL Threat Detection Mobile & Research Inference Engine.
     Executes offline-capable calibrated probability estimation, split conformal prediction sets,
     OOD detection, and localized explainability.
     """
@@ -138,3 +138,7 @@ class MobiURLGuardInferenceEngine:
             },
             "model_version": self.version
         }
+
+# Alias for backward compatibility
+MobiURLGuardInferenceEngine = URLThreatDetectionInferenceEngine
+
