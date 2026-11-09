@@ -64,13 +64,6 @@ export default function App() {
             <span>&bull;</span>
             <span>Zero-Day Generalization & Conformal Uncertainty</span>
           </div>
-
-          <div className="flex items-center space-x-4">
-            <span className="flex items-center space-x-1.5 text-emerald-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              <span>Offline Edge Inference Verified</span>
-            </span>
-          </div>
         </div>
       </footer>
 

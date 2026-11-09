@@ -98,7 +98,6 @@ export const ScannerPanel: React.FC<ScannerPanelProps> = ({
           <div>
             <h2 className="text-base font-semibold text-white flex items-center space-x-2">
               <span>Target URL Inspection</span>
-              <span className="text-xs font-normal text-slate-400">| Offline Edge Inference</span>
             </h2>
             <p className="text-xs text-slate-400">
               Evaluated with calibrated isotonic probability & split conformal uncertainty guarantees.
