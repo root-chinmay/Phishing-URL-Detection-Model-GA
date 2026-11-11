@@ -34,7 +34,7 @@ def benchmark_mobile_performance(test_urls_path: str = "data/raw/dataset.csv", n
     single_latencies = []
     for u in test_urls[:200]:
         t0 = time.perf_counter()
-        _ = engine.analyze_url(u)
+        _ = engine.analyze_url(u, resolve_shorteners=False)
         single_latencies.append((time.perf_counter() - t0) * 1000)
 
     mean_single_ms = float(np.mean(single_latencies))

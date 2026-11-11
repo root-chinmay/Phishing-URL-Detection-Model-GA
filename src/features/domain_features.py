@@ -3,8 +3,14 @@ import ipaddress
 from urllib.parse import urlparse
 
 KNOWN_SHORTENERS = {
-    "bit.ly", "tinyurl.com", "t.co", "goo.gl", "ow.ly", "buff.ly", "is.gd",
-    "cutt.ly", "rebrand.ly", "shorturl.at", "tiny.cc", "adf.ly"
+    "bit.ly", "bitly.com", "tinyurl.com", "t.co", "goo.gl", "ow.ly", "buff.ly",
+    "is.gd", "v.gd", "cutt.ly", "rebrand.ly", "shorturl.at", "tiny.cc", "adf.ly",
+    "rb.gy", "lnkd.in", "youtu.be", "amzn.to", "fb.me", "g.co", "aka.ms", "s.id",
+    "clck.ru", "x.co", "short.io", "bl.ink", "t.ly", "dub.sh", "shrtco.de",
+    "qr.ae", "mcaf.ee", "tr.im", "wp.me", "po.st", "urlz.fr", "tiny.one",
+    "soo.gd", "surl.li", "u.to", "zpr.io", "t2m.io", "short.gy", "bc.vc",
+    "ouo.io", "gestyy.com", "linktr.ee", "l.facebook.com", "l.instagram.com",
+    "lm.facebook.com", "j.mp", "q.gs", "url.ie"
 }
 
 SUSPICIOUS_TLDS = {

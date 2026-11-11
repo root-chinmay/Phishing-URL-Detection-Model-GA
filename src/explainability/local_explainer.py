@@ -47,13 +47,51 @@ FEATURE_EXPLANATION_TEMPLATES = {
     )
 }
 
-def generate_local_explanation(url: str, risk_percentage: float) -> list:
+def generate_local_explanation(
+    url: str,
+    risk_percentage: float,
+    advanced_feats: dict = None,
+    redirect_info: dict = None
+) -> list:
     """
     Generate top 3-5 clear, explainable factors contributing to the predicted risk score.
-    Identifies specific lexical, domain, unicode, and brand characteristics.
+    Identifies specific lexical, domain, unicode, brand, and redirect-chain characteristics.
     """
     feats = extract_url_feature_dict(url)
+    adv = advanced_feats or {}
+    r_info = redirect_info or {}
     reasons = []
+
+    # Check resolved redirect chain / shortener transparency
+    if r_info.get("resolved_successfully") and r_info.get("final_url") and r_info.get("final_url") != r_info.get("original_url"):
+        hops = r_info.get("hop_count", 1)
+        final_host = ""
+        chain = r_info.get("redirect_chain") or []
+        if chain:
+            final_host = chain[-1].get("hostname", "")
+        if risk_percentage >= 60.0:
+            reasons.append({
+                "factor": "shortener_malicious_target",
+                "text": f"Masked Malicious Destination: Shortener redirected across {hops} hop(s) to high-risk host '{final_host}'.",
+                "severity": "critical",
+                "weight": 0.36
+            })
+
+    if adv.get("protocol_downgrade_flag"):
+        reasons.append({
+            "factor": "protocol_downgrade",
+            "text": "TLS Protocol Downgrade: Redirect chain downgraded transport security from HTTPS to unencrypted HTTP.",
+            "severity": "high",
+            "weight": 0.32
+        })
+
+    if adv.get("has_userinfo_at_obfuscation"):
+        reasons.append({
+            "factor": "userinfo_masking",
+            "text": "Credential '@' Authority Masking: URL uses userinfo prefix before '@' to conceal true destination host.",
+            "severity": "high",
+            "weight": 0.31
+        })
 
     # Check high-weight explicit security flags
     if feats.get("brand_impersonation_flag") == 1:
@@ -67,8 +105,40 @@ def generate_local_explanation(url: str, risk_percentage: float) -> list:
     if feats.get("is_punycode") == 1 or feats.get("homoglyph_count", 0) > 0:
         reasons.append({"factor": "homoglyph_punycode", "text": FEATURE_EXPLANATION_TEMPLATES["homoglyph_count"][0], "severity": "high", "weight": 0.28})
 
-    if feats.get("is_known_shortener") == 1:
+    if adv.get("has_encoded_payload"):
+        reasons.append({
+            "factor": "encoded_payload",
+            "text": "Encoded Payload Blob: Path or query contains long Base64/Hex encoded tokens typical of payload smuggling.",
+            "severity": "high",
+            "weight": 0.26
+        })
+
+    if adv.get("has_port_obfuscation"):
+        reasons.append({
+            "factor": "port_obfuscation",
+            "text": "Non-Standard Port Specified: Host connects via an uncommon port rather than standard HTTP/HTTPS ports.",
+            "severity": "medium",
+            "weight": 0.24
+        })
+
+    if adv.get("has_double_extension_or_script"):
+        reasons.append({
+            "factor": "double_extension",
+            "text": "Suspicious Script/Double Extension: URL path uses deceptive multi-extension or credential-handler scripts.",
+            "severity": "medium",
+            "weight": 0.23
+        })
+
+    if feats.get("is_known_shortener") == 1 and not r_info.get("resolved_successfully"):
         reasons.append({"factor": "shortener", "text": FEATURE_EXPLANATION_TEMPLATES["is_known_shortener"][0], "severity": "medium", "weight": 0.22})
+
+    if adv.get("consonant_cluster_anomaly"):
+        reasons.append({
+            "factor": "dga_consonant_anomaly",
+            "text": "Algorithmic Domain Anomaly (DGA): Domain exhibits unnatural consonant clustering consistent with generated domains.",
+            "severity": "medium",
+            "weight": 0.21
+        })
 
     if feats.get("num_subdomains", 0) >= 3:
         reasons.append({"factor": "subdomains", "text": f"Deep Nested Subdomains: Contains {feats['num_subdomains']} subdomains masking actual registrant.", "severity": "medium", "weight": 0.20})
@@ -91,11 +161,21 @@ def generate_local_explanation(url: str, risk_percentage: float) -> list:
 
     # If safe URL with low risk, provide positive validation factors
     if risk_percentage < 35.0:
-        benign_reasons = [
+        benign_reasons = []
+        if r_info.get("resolved_successfully") and r_info.get("final_url") and r_info.get("final_url") != r_info.get("original_url"):
+            chain = r_info.get("redirect_chain") or []
+            final_host = chain[-1].get("hostname", "") if chain else ""
+            benign_reasons.append({
+                "factor": "resolved_safe_target",
+                "text": f"Resolved Shortener Destination: Unshortened via {r_info.get('hop_count', 1)} hop(s) to verified host '{final_host}'.",
+                "severity": "safe",
+                "weight": 0.35
+            })
+        benign_reasons.extend([
             {"factor": "clean_domain", "text": "Standard Domain Structure: Registered with normal depth and recognized Top-Level Domain.", "severity": "safe", "weight": 0.3},
             {"factor": "no_obfuscation", "text": "No Obfuscation Detected: Free of homoglyphs, punycode prefixes, and nested open-redirects.", "severity": "safe", "weight": 0.25},
             {"factor": "balanced_entropy", "text": "Normal Character Distribution: Shannon entropy matches standard web application routing.", "severity": "safe", "weight": 0.2}
-        ]
+        ])
         return [r["text"] for r in (reasons[:1] + benign_reasons)[:3]]
 
     # Return top 3-5 explanations

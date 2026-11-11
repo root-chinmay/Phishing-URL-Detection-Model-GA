@@ -1,9 +1,14 @@
 import React, { useState } from 'react';
 import { 
   Search, QrCode, ShieldCheck, AlertTriangle, AlertOctagon, HelpCircle, 
-  ChevronDown, ChevronUp, Copy, Check, MessageSquare, ExternalLink, RefreshCw, Sparkles, Layers
+  ChevronDown, ChevronUp, Copy, Check, MessageSquare, ExternalLink, RefreshCw, Sparkles, Layers, GitBranch, Loader2
 } from 'lucide-react';
-import { analyzeUrlClient, DetectionResult } from '../engine/urlDetector';
+import {
+  analyzeUrlClient,
+  DetectionResult,
+  isShortenerOrRedirectUrl,
+  resolveUrlViaApi
+} from '../engine/urlDetector';
 
 interface ScannerPanelProps {
   onOpenQRScanner: () => void;
@@ -52,15 +57,32 @@ export const ScannerPanel: React.FC<ScannerPanelProps> = ({
   const [showMessageBox, setShowMessageBox] = useState(false);
   const [showRawFeatures, setShowRawFeatures] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isResolving, setIsResolving] = useState(false);
 
   // Compute live detection result
   const [result, setResult] = useState<DetectionResult>(() => analyzeUrlClient(inputUrl));
 
-  const handleScan = (urlToScan?: string) => {
+  const handleScan = async (urlToScan?: string) => {
     const target = urlToScan !== undefined ? urlToScan : inputUrl;
     if (!target.trim()) return;
-    const res = analyzeUrlClient(target, messageContext);
-    setResult(res);
+
+    // Run immediate baseline analysis first for instant UI feedback
+    const initialRes = analyzeUrlClient(target, messageContext);
+    setResult(initialRes);
+
+    // If URL is a known shortener or contains redirect wrappers, resolve full redirect chain
+    if (isShortenerOrRedirectUrl(target)) {
+      setIsResolving(true);
+      try {
+        const redirectInfo = await resolveUrlViaApi(target);
+        if (redirectInfo) {
+          const updatedRes = analyzeUrlClient(target, messageContext, redirectInfo);
+          setResult(updatedRes);
+        }
+      } finally {
+        setIsResolving(false);
+      }
+    }
   };
 
   const handleCopyResult = () => {
@@ -145,10 +167,20 @@ export const ScannerPanel: React.FC<ScannerPanelProps> = ({
 
           <button
             onClick={() => handleScan()}
-            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-semibold flex items-center justify-center space-x-2 shadow-lg shadow-blue-600/30 transition-all cursor-pointer"
+            disabled={isResolving}
+            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-70 text-white rounded-xl text-sm font-semibold flex items-center justify-center space-x-2 shadow-lg shadow-blue-600/30 transition-all cursor-pointer"
           >
-            <ShieldCheck className="w-4 h-4" />
-            <span>Analyze URL</span>
+            {isResolving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Resolving Link...</span>
+              </>
+            ) : (
+              <>
+                <ShieldCheck className="w-4 h-4" />
+                <span>Analyze URL</span>
+              </>
+            )}
           </button>
         </div>
 
@@ -315,6 +347,41 @@ export const ScannerPanel: React.FC<ScannerPanelProps> = ({
 
         {/* Right 2 Columns: Explainable Reasons & URL Structural Breakdown */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Destination & Redirect Chain Trace (Shown for shorteners or resolved redirects) */}
+          {(result.features.is_shortener || result.effective_url !== result.url || result.redirect_info) && (
+            <div className="bg-slate-900/70 border border-cyan-500/25 rounded-2xl p-5 shadow-xl space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center space-x-2">
+                  <GitBranch className="w-4 h-4 text-cyan-400" />
+                  <h3 className="text-sm font-semibold text-white">Redirect &amp; Destination Resolution</h3>
+                </div>
+                <div className="flex items-center space-x-2 text-[11px]">
+                  <span className={`px-2 py-0.5 rounded font-semibold border ${
+                    result.features.shortener_resolved
+                      ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                      : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                  }`}>
+                    {result.features.shortener_resolved ? 'Destination Resolved' : 'Unresolved / Offline Fallback'}
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono">
+                    {result.features.redirect_hop_count} Hop(s) &bull; {result.features.cross_domain_redirects} Cross-Domain
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-2 text-xs font-mono">
+                <div className="p-2.5 rounded-lg bg-slate-950/90 border border-slate-800 flex items-center justify-between gap-2">
+                  <span className="text-slate-400 shrink-0 font-sans">Submitted URL:</span>
+                  <span className="text-slate-200 truncate">{result.url}</span>
+                </div>
+                <div className="p-2.5 rounded-lg bg-slate-950/90 border border-cyan-500/20 flex items-center justify-between gap-2">
+                  <span className="text-cyan-400 shrink-0 font-sans font-medium">Evaluated Target:</span>
+                  <span className="text-cyan-200 truncate">{result.effective_url}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Top Explainable Risk Factors */}
           <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 shadow-xl">
             <h3 className="text-sm font-semibold text-white mb-3 flex items-center justify-between">
@@ -432,6 +499,28 @@ export const ScannerPanel: React.FC<ScannerPanelProps> = ({
                   <span className="text-slate-400 block text-[11px]">Impersonated Brand</span>
                   <span className={`font-mono font-semibold ${result.features.impersonated_brand ? 'text-amber-400' : 'text-slate-400'}`}>
                     {result.features.impersonated_brand || 'None'}
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
+                  <span className="text-slate-400 block text-[11px]">Max Path Entropy</span>
+                  <span className="font-mono font-semibold text-cyan-300">{result.features.max_path_token_entropy} bits</span>
+                </div>
+                <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
+                  <span className="text-slate-400 block text-[11px]">Encoded Payload (B64/Hex)</span>
+                  <span className={`font-mono font-semibold ${result.features.has_encoded_payload ? 'text-rose-400' : 'text-slate-400'}`}>
+                    {result.features.has_encoded_payload ? 'DETECTED' : 'None'}
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
+                  <span className="text-slate-400 block text-[11px]">DGA Consonant Anomaly</span>
+                  <span className={`font-mono font-semibold ${result.features.consonant_cluster_anomaly ? 'text-amber-400' : 'text-slate-400'}`}>
+                    {result.features.consonant_cluster_anomaly ? 'DETECTED' : 'Normal'}
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
+                  <span className="text-slate-400 block text-[11px]">TLS Downgrade / Port / @</span>
+                  <span className={`font-mono font-semibold ${(result.features.protocol_downgrade || result.features.has_port_obfuscation || result.features.has_userinfo_at) ? 'text-rose-400' : 'text-slate-400'}`}>
+                    {(result.features.protocol_downgrade || result.features.has_port_obfuscation || result.features.has_userinfo_at) ? 'FLAGGED' : 'Clean'}
                   </span>
                 </div>
               </div>
