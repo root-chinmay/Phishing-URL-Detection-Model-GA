@@ -126,39 +126,63 @@ class URLThreatDetectionInferenceEngine:
             adv_feats["shortener_resolved_flag"] = 1
             adv_feats["shortener_unresolved_flag"] = 0
 
-        # 2. Advanced feature risk calibration
-        adv_adjustment = 0.0
+        # 2. Advanced probabilistic log-odds calibration
+        p_base = float(np.clip(raw_prob, 0.035, 0.94))
+        log_odds = float(np.log(p_base / (1.0 - p_base)))
+
         if adv_feats.get("is_executable_drop"):
-            if adv_feats.get("is_upload_drop_dir") or adv_feats.get("has_random_hash_filename"):
-                adv_adjustment += 0.88
-            else:
-                adv_adjustment += 0.78
+            log_odds += 3.6
+            if adv_feats.get("is_upload_drop_dir"):
+                log_odds += 1.1
+            if adv_feats.get("has_random_hash_filename"):
+                log_odds += 0.7
         if adv_feats.get("protocol_downgrade_flag"):
-            adv_adjustment += 0.22
+            log_odds += 1.5
         if adv_feats.get("has_userinfo_at_obfuscation"):
-            adv_adjustment += 0.28
+            log_odds += 2.2
         if adv_feats.get("has_encoded_payload"):
-            adv_adjustment += 0.18
+            log_odds += 1.2
         if adv_feats.get("has_port_obfuscation"):
-            adv_adjustment += 0.15
+            log_odds += 1.0
         if adv_feats.get("has_double_extension_or_script"):
-            adv_adjustment += 0.16
+            log_odds += 1.1
         if adv_feats.get("consonant_cluster_anomaly"):
-            adv_adjustment += 0.14
-        if adv_feats.get("is_http_non_ssl"):
-            adv_adjustment += 0.12
+            log_odds += 0.9
         if adv_feats.get("char_ngram_phishing_score", 0) >= 0.25:
-            adv_adjustment += 0.18 * adv_feats["char_ngram_phishing_score"]
+            log_odds += 1.3 * adv_feats["char_ngram_phishing_score"]
         if adv_feats.get("cross_domain_redirect_count", 0) >= 3:
-            adv_adjustment += 0.10
+            log_odds += 0.8
         elif adv_feats.get("redirect_hop_count", 0) >= 4:
-            adv_adjustment += 0.08
+            log_odds += 0.6
+
+        # Nuanced micro-calibration from exact URL structural entropy and length
+        entropy_val = float(feat_dict.get("entropy_url", 3.8))
+        url_len = float(feat_dict.get("url_length", 45))
+        log_odds += (entropy_val - 3.8) * 0.22
+        log_odds += max(0.0, url_len - 45.0) * 0.006
+
+        if adv_feats.get("is_http_non_ssl") and log_odds > -2.0:
+            log_odds += 0.45
 
         # If input was an open-redirect wrapper with an embedded risky target, also ensure base host risk isn't lost
         if offline_redirect.get("has_redirect_param") and effective_url != url_clean:
             orig_prob, _ = self._score_single_url(canonicalize_url_for_comparison(url_clean) or url_clean)
-            raw_prob = max(raw_prob, orig_prob * 0.85)
-            adv_adjustment += 0.08
+            if orig_prob > 0.4:
+                log_odds += 0.5
+
+        # If a known shortener could NOT be resolved (offline / dead / blocked), retain mild caution
+        if is_input_shortener and not used_resolved_target:
+            log_odds = max(log_odds + 1.1, -0.32)
+        elif is_input_shortener and used_resolved_target:
+            if log_odds > -0.85:
+                log_odds += 0.15
+
+        msg_feats = extract_message_features(message_text)
+        if msg_feats["has_message_context"] == 1:
+            log_odds += float(msg_feats.get("composite_message_risk", 0.0)) * 1.5
+
+        # Sigmoid probability
+        calibrated_raw = 1.0 / (1.0 + np.exp(-log_odds))
 
         # Verified authority domain guard on canonical target host (only when free of obfuscation and executable drops)
         target_host = feat_dict.get("_meta", {}).get("hostname", "")
@@ -172,25 +196,10 @@ class URLThreatDetectionInferenceEngine:
             and adv_feats.get("is_executable_drop", 0) == 0
             and not offline_redirect.get("has_redirect_param")
         ):
-            raw_prob = min(raw_prob, 0.03)
-            adv_adjustment = 0.0
+            calibrated_raw = 0.01
 
-        # If a known shortener could NOT be resolved (offline / dead / blocked), retain mild caution
-        if is_input_shortener and not used_resolved_target:
-            raw_prob = max(raw_prob, 0.42)
-        elif is_input_shortener and used_resolved_target:
-            # Resolved cleanly: trust destination ML score + any evasion/downgrade penalty
-            if adv_adjustment == 0.0 and raw_prob > 0.30:
-                raw_prob = min(0.99, raw_prob + 0.02)
-
-        raw_prob = min(max(raw_prob + adv_adjustment, 0.01), 0.99)
-
-        msg_feats = extract_message_features(message_text)
-        if msg_feats["has_message_context"] == 1:
-            raw_prob = 0.8 * raw_prob + 0.2 * msg_feats["composite_message_risk"]
-
-        # 3. Calibrated risk percentage
-        calibrated_prob = round(float(np.clip(raw_prob, 0.01, 0.99)), 4)
+        # 3. Calibrated risk percentage (bounded 1.0% to 97.2% - eliminates the flat 99% ceiling)
+        calibrated_prob = round(float(np.clip(calibrated_raw, 0.01, 0.972)), 4)
         risk_percentage = round(calibrated_prob * 100.0, 1)
         benign_prob = round(1.0 - calibrated_prob, 4)
         benign_percentage = round(100.0 - risk_percentage, 1)

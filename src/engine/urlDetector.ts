@@ -450,41 +450,94 @@ export function analyzeUrlClient(
   const brandCheck = detectBrandImpersonation(host, effectiveCanonical);
   const adv = extractAdvancedFeatures(effectiveCanonical, redirectInfo);
 
-  // Calibrated Hybrid Scoring
-  let baseScore = 0.02;
+  // Calibrated Hybrid Probabilistic Log-Odds Evidence Scoring
+  let logOdds = -3.40;
+
   if (adv.isExecutableDrop) {
-    baseScore += (adv.isUploadDropDir || adv.hasRandomHash) ? 0.88 : 0.78;
+    logOdds += 3.6;
+    if (adv.isUploadDropDir) logOdds += 1.1;
+    if (adv.hasRandomHash) logOdds += 0.7;
   }
-  if (brandCheck.isImpersonating) baseScore += 0.50;
-  if (isIp) baseScore += 0.45;
-  if (isPunycode || homoglyphsCount > 0) baseScore += 0.40;
-  if (adv.hasUserinfoAt) baseScore += 0.35;
-  if (isSuspiciousTld) baseScore += 0.28;
-  if (adv.protocolDowngrade) baseScore += 0.24;
-  if (adv.hasEncodedPayload) baseScore += 0.20;
-  if (adv.hasDoubleExtension) baseScore += 0.18;
-  if (adv.hasPortObfuscation) baseScore += 0.16;
-  if (adv.consonantClusterAnomaly) baseScore += 0.16;
-  if (adv.isHttpNonSsl) baseScore += 0.12;
-  if (adv.charNgramScore >= 0.25) baseScore += 0.22 * adv.charNgramScore;
-  if (numKeywords >= 2) baseScore += 0.24;
-  else if (numKeywords === 1 && (isSuspiciousTld || brandCheck.isImpersonating || adv.hasDoubleExtension)) baseScore += 0.12;
-  if (numSubdomains >= 3) baseScore += 0.18;
-  if (entropy >= 4.65) baseScore += 0.14;
-  if (urlLen >= 135) baseScore += 0.08;
-  if (adv.crossDomainRedirects >= 3 || adv.redirectHopCount >= 4) baseScore += 0.12;
+  if (brandCheck.isImpersonating) {
+    logOdds += 3.2 * (brandCheck.similarity || 1.0);
+  }
+  if (isIp) {
+    logOdds += 2.8;
+  }
+  if (isPunycode || homoglyphsCount > 0) {
+    logOdds += 2.4 + Math.min(homoglyphsCount * 0.35, 1.0);
+  }
+  if (adv.hasUserinfoAt) {
+    logOdds += 2.2;
+  }
+  if (isSuspiciousTld) {
+    logOdds += 1.7;
+  }
+  if (adv.protocolDowngrade) {
+    logOdds += 1.5;
+  }
+  if (adv.hasEncodedPayload) {
+    logOdds += 1.2;
+  }
+  if (adv.hasDoubleExtension) {
+    logOdds += 1.1;
+  }
+  if (adv.hasPortObfuscation) {
+    logOdds += 1.0;
+  }
+  if (adv.consonantClusterAnomaly) {
+    logOdds += 0.9;
+  }
+  if (numKeywords >= 2) {
+    logOdds += 1.4;
+  } else if (numKeywords === 1 && (isSuspiciousTld || brandCheck.isImpersonating || adv.hasDoubleExtension)) {
+    logOdds += 0.7;
+  }
+  if (adv.charNgramScore >= 0.25) {
+    logOdds += 1.3 * adv.charNgramScore;
+  }
+  if (numSubdomains >= 3) {
+    logOdds += 0.7;
+  }
+  if (adv.crossDomainRedirects >= 3 || adv.redirectHopCount >= 4) {
+    logOdds += 0.8;
+  }
+
+  // Nuanced structural entropy & URL length micro-calibration
+  logOdds += (entropy - 3.8) * 0.22;
+  logOdds += Math.max(0, urlLen - 45) * 0.006;
+
+  if (adv.isHttpNonSsl && logOdds > -2.0) {
+    logOdds += 0.45;
+  }
 
   // Shortener resolution handling:
   // If shortener was resolved to final destination, evaluate destination directly;
   // If shortener could NOT be resolved, flag opaque/unverified destination risk.
   if ((isInputShortener || isEffectiveShortener) && !shortenerResolved) {
-    baseScore = Math.max(baseScore + 0.28, 0.42);
+    logOdds = Math.max(logOdds + 1.1, -0.32);
   } else if (isInputShortener && shortenerResolved) {
-    // Cleanly resolved shortener: keep tiny 0.01 transparency nudge only if destination had flags
-    if (baseScore > 0.30) {
-      baseScore = Math.min(0.99, baseScore + 0.03);
+    if (logOdds > -0.85) {
+      logOdds += 0.15;
     }
   }
+
+  // Message context influence
+  const modalities = ["url"];
+  if (shortenerResolved) modalities.push("redirect_resolution");
+  if (messageText && messageText.trim()) {
+    modalities.push("message_context");
+    const msgLower = messageText.toLowerCase();
+    const hasUrgent = ["urgent", "immediately", "suspended", "locked", "expire"].some(w => msgLower.includes(w));
+    const hasCred = ["password", "verify", "otp", "pin", "credentials"].some(w => msgLower.includes(w));
+    const hasPrize = ["won", "winner", "prize", "refund", "claim"].some(w => msgLower.includes(w));
+    if (hasUrgent || hasCred || hasPrize) {
+      logOdds += 1.3;
+    }
+  }
+
+  // Sigmoid probability mapping
+  let prob = 1.0 / (1.0 + Math.exp(-logOdds));
 
   // Verified official/authority domain check (on resolved destination host)
   const isOfficialMajor = OFFICIAL_MAJOR_DOMAINS.some(d => host === d || host.endsWith(`.${d}`));
@@ -498,24 +551,11 @@ export function analyzeUrlClient(
     !adv.isExecutableDrop &&
     !embeddedTarget
   ) {
-    baseScore = 0.01;
+    prob = 0.01;
   }
 
-  // Message context influence
-  const modalities = ["url"];
-  if (shortenerResolved) modalities.push("redirect_resolution");
-  if (messageText && messageText.trim()) {
-    modalities.push("message_context");
-    const msgLower = messageText.toLowerCase();
-    const hasUrgent = ["urgent", "immediately", "suspended", "locked", "expire"].some(w => msgLower.includes(w));
-    const hasCred = ["password", "verify", "otp", "pin", "credentials"].some(w => msgLower.includes(w));
-    const hasPrize = ["won", "winner", "prize", "refund", "claim"].some(w => msgLower.includes(w));
-    if (hasUrgent || hasCred || hasPrize) {
-      baseScore = Math.min(0.99, baseScore + 0.20);
-    }
-  }
-
-  const calibratedRisk = Math.min(Math.max(baseScore, 0.01), 0.99);
+  // Natural bounded calibration (1.0% to 97.2% - eliminating the artificial 99% flatline ceiling)
+  const calibratedRisk = Math.min(Math.max(prob, 0.01), 0.972);
   const riskPercentage = Math.round(calibratedRisk * 1000) / 10;
   const benignPercentage = Math.round((100 - riskPercentage) * 10) / 10;
 
