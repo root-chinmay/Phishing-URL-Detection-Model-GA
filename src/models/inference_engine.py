@@ -128,23 +128,30 @@ class URLThreatDetectionInferenceEngine:
 
         # 2. Advanced feature risk calibration
         adv_adjustment = 0.0
-        if adv_feats["protocol_downgrade_flag"]:
+        if adv_feats.get("is_executable_drop"):
+            if adv_feats.get("is_upload_drop_dir") or adv_feats.get("has_random_hash_filename"):
+                adv_adjustment += 0.88
+            else:
+                adv_adjustment += 0.78
+        if adv_feats.get("protocol_downgrade_flag"):
             adv_adjustment += 0.22
-        if adv_feats["has_userinfo_at_obfuscation"]:
+        if adv_feats.get("has_userinfo_at_obfuscation"):
             adv_adjustment += 0.28
-        if adv_feats["has_encoded_payload"]:
+        if adv_feats.get("has_encoded_payload"):
             adv_adjustment += 0.18
-        if adv_feats["has_port_obfuscation"]:
+        if adv_feats.get("has_port_obfuscation"):
             adv_adjustment += 0.15
-        if adv_feats["has_double_extension_or_script"]:
+        if adv_feats.get("has_double_extension_or_script"):
             adv_adjustment += 0.16
-        if adv_feats["consonant_cluster_anomaly"]:
+        if adv_feats.get("consonant_cluster_anomaly"):
             adv_adjustment += 0.14
-        if adv_feats["char_ngram_phishing_score"] >= 0.25:
+        if adv_feats.get("is_http_non_ssl"):
+            adv_adjustment += 0.12
+        if adv_feats.get("char_ngram_phishing_score", 0) >= 0.25:
             adv_adjustment += 0.18 * adv_feats["char_ngram_phishing_score"]
-        if adv_feats["cross_domain_redirect_count"] >= 3:
+        if adv_feats.get("cross_domain_redirect_count", 0) >= 3:
             adv_adjustment += 0.10
-        elif adv_feats["redirect_hop_count"] >= 4:
+        elif adv_feats.get("redirect_hop_count", 0) >= 4:
             adv_adjustment += 0.08
 
         # If input was an open-redirect wrapper with an embedded risky target, also ensure base host risk isn't lost
@@ -153,19 +160,16 @@ class URLThreatDetectionInferenceEngine:
             raw_prob = max(raw_prob, orig_prob * 0.85)
             adv_adjustment += 0.08
 
-        # Verified authority domain guard on canonical target host (only when free of obfuscation)
+        # Verified authority domain guard on canonical target host (only when free of obfuscation and executable drops)
         target_host = feat_dict.get("_meta", {}).get("hostname", "")
-        target_tld = feat_dict.get("_meta", {}).get("tld", "")
-        is_official_target = (
-            any(target_host == d or target_host.endswith(f".{d}") for d in OFFICIAL_MAJOR_DOMAINS)
-            or target_tld in ("edu", "gov")
-        )
+        is_official_target = any(target_host == d or target_host.endswith(f".{d}") for d in OFFICIAL_MAJOR_DOMAINS)
         if (
             is_official_target
             and feat_dict.get("is_punycode", 0) == 0
             and feat_dict.get("homoglyph_count", 0) == 0
-            and adv_feats["has_userinfo_at_obfuscation"] == 0
-            and adv_feats["protocol_downgrade_flag"] == 0
+            and adv_feats.get("has_userinfo_at_obfuscation", 0) == 0
+            and adv_feats.get("protocol_downgrade_flag", 0) == 0
+            and adv_feats.get("is_executable_drop", 0) == 0
             and not offline_redirect.get("has_redirect_param")
         ):
             raw_prob = min(raw_prob, 0.03)

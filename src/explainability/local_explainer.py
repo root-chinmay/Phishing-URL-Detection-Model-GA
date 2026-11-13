@@ -85,6 +85,25 @@ def generate_local_explanation(
             "weight": 0.32
         })
 
+    if adv.get("is_executable_drop"):
+        drop_detail = "Direct Executable / Malware Drop: URL links directly to an executable binary (.exe/.scr/.bin/.apk/etc.) payload."
+        if adv.get("is_upload_drop_dir"):
+            drop_detail = "Malware Drop in Upload Directory: Executable binary hosted inside a public upload/drop directory."
+        reasons.append({
+            "factor": "executable_malware_drop",
+            "text": drop_detail,
+            "severity": "critical",
+            "weight": 0.40
+        })
+
+    if adv.get("is_http_non_ssl") and risk_percentage >= 40.0:
+        reasons.append({
+            "factor": "insecure_http",
+            "text": "Unencrypted Transport (HTTP): Link transmits over unencrypted plaintext HTTP without TLS/SSL protection.",
+            "severity": "medium",
+            "weight": 0.19
+        })
+
     if adv.get("has_userinfo_at_obfuscation"):
         reasons.append({
             "factor": "userinfo_masking",

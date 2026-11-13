@@ -9,9 +9,9 @@
 
 | Nominal Confidence (1 - alpha) | Empirical Coverage on Test | Average Set Size | Uncertainty Rate ({Legitimate, Malicious}) | Quantile Threshold q_hat |
 |---|---|---|---|---|
-| **90.0%** (alpha=0.10) | **92.3%** | 1.08 | 8.2% | 0.6200 |
-| **95.0%** (alpha=0.05) | **95.5%** | 1.18 | 18.0% | 0.6701 |
-| **99.0%** (alpha=0.01) | **99.0%** | 1.49 | 48.8% | 0.9384 |
+| **90.0%** (alpha=0.10) | **92.1%** | 1.07 | 7.3% | 0.6492 |
+| **95.0%** (alpha=0.05) | **96.1%** | 1.21 | 20.5% | 0.7107 |
+| **99.0%** (alpha=0.01) | **99.0%** | 1.50 | 49.8% | 0.9390 |
 
 ---
 

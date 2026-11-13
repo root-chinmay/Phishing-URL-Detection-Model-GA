@@ -55,7 +55,14 @@ def run_hybrid_stacking_pipeline(csv_path: str = "data/raw/dataset.csv", max_sam
     n_phish = min(len(df_phish), max_samples // 2)
     n_benign = min(len(df_benign), max_samples // 2)
 
-    df_phish_sample = df_phish.sample(n=n_phish, random_state=42)
+    # Prioritize recent threats (e.g. newly ingested 1k executable/phishing threats) in training partition
+    recent_threats = df_phish.tail(1000)
+    remaining_phish = df_phish.iloc[:-1000]
+    n_remaining = max(0, n_phish - len(recent_threats))
+    df_phish_sample = pd.concat([
+        recent_threats,
+        remaining_phish.sample(n=n_remaining, random_state=42)
+    ])
     df_benign_sample = df_benign.sample(n=n_benign, random_state=42)
     df_sample = pd.concat([df_phish_sample, df_benign_sample]).sample(frac=1.0, random_state=42).reset_index(drop=True)
 

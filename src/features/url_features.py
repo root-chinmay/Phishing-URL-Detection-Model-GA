@@ -178,6 +178,31 @@ def extract_advanced_url_features(url: str, redirect_info: dict = None) -> dict:
         url_lower
     ) else 0
 
+    # 6b. Direct executable / malware binary payload drop detection (.exe, .scr, .bin, .msi, .apk, .bat, etc.)
+    is_executable_drop = 1 if re.search(
+        r"\.(exe|scr|bin|msi|apk|bat|cmd|vbs|vbe|dll|iso|hta|elf|sh|pif|dmg|pkg)(\?|$)",
+        path.lower()
+    ) else 0
+
+    # 6c. Suspicious upload / file drop directory
+    is_upload_drop_dir = 1 if re.search(
+        r"/(uploads?|drop|files?|temp|attachments?|wp-content/uploads?|dl|download|bin)/",
+        path.lower()
+    ) else 0
+
+    # 6d. Randomized hash / algorithmic token filename
+    filename = segments[-1] if segments else ""
+    stem = filename.rsplit(".", 1)[0] if "." in filename else filename
+    has_random_hash_filename = 1 if (
+        len(stem) >= 8 and (
+            bool(re.search(r"[0-9a-f]{16,}", stem, re.IGNORECASE))
+            or (any(c.isdigit() for c in stem) and any(c.isalpha() for c in stem) and calculate_shannon_entropy(stem) >= 3.0)
+        )
+    ) else 0
+
+    is_malware_drop_composite = 1 if (is_executable_drop and (is_upload_drop_dir or has_random_hash_filename)) else is_executable_drop
+    is_http_non_ssl = 1 if parsed.scheme.lower() == "http" else 0
+
     # 7. Structural character n-gram phishing score
     ngram_hits = sum(1 for tok in PHISHING_NGRAM_TOKENS if tok in url_lower)
     char_ngram_phishing_score = round(min(1.0, ngram_hits * 0.25), 4)
@@ -204,6 +229,11 @@ def extract_advanced_url_features(url: str, redirect_info: dict = None) -> dict:
         "max_consecutive_digits": max_consecutive_digits,
         "has_port_obfuscation": has_port_obfuscation,
         "has_double_extension_or_script": has_double_extension_or_script,
+        "is_executable_drop": is_executable_drop,
+        "is_upload_drop_dir": is_upload_drop_dir,
+        "has_random_hash_filename": has_random_hash_filename,
+        "is_malware_drop_composite": is_malware_drop_composite,
+        "is_http_non_ssl": is_http_non_ssl,
         "has_userinfo_at_obfuscation": has_userinfo_at_obfuscation,
         "char_ngram_phishing_score": char_ngram_phishing_score,
         "vowel_ratio": round(vowel_ratio, 4)

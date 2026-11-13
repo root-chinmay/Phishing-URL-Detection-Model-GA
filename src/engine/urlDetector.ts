@@ -374,6 +374,16 @@ function extractAdvancedFeatures(url: string, redirectInfo?: RedirectResolutionR
   const hasUserinfoAt = Boolean(parsed.username) || url.split("/")[2]?.includes("@") || false;
   const hasDoubleExtension = /\.(com|net|org|pdf|doc|docx)\.(php|html|htm|exe|apk|zip|js)\b|\/(login|signin|verify|auth)\.(php|asp|aspx|jsp)\b/i.test(urlLower);
 
+  const isExecutableDrop = /\.(exe|scr|bin|msi|apk|bat|cmd|vbs|vbe|dll|iso|hta|elf|sh|pif|dmg|pkg)(\?|$)/i.test(path);
+  const isUploadDropDir = /\/(uploads?|drop|files?|temp|attachments?|wp-content\/uploads?|dl|download|bin)\//i.test(path);
+  const lastSegment = segments.length > 0 ? segments[segments.length - 1] : "";
+  const stem = lastSegment.includes(".") ? lastSegment.substring(0, lastSegment.lastIndexOf(".")) : lastSegment;
+  const hasRandomHash = stem.length >= 8 && (
+    /[0-9a-f]{16,}/i.test(stem) ||
+    (/\d/.test(stem) && /[a-z]/i.test(stem) && calculateEntropy(stem) >= 3.0)
+  );
+  const isHttpNonSsl = parsed.protocol === "http:";
+
   const ngramHits = PHISHING_NGRAM_TOKENS.filter(tok => urlLower.includes(tok)).length;
   const charNgramScore = Math.min(1.0, ngramHits * 0.25);
 
@@ -384,6 +394,10 @@ function extractAdvancedFeatures(url: string, redirectInfo?: RedirectResolutionR
     hasPortObfuscation,
     hasUserinfoAt,
     hasDoubleExtension,
+    isExecutableDrop,
+    isUploadDropDir,
+    hasRandomHash,
+    isHttpNonSsl,
     charNgramScore,
     redirectHopCount: redirectInfo?.hop_count ?? 0,
     crossDomainRedirects: redirectInfo?.cross_domain_redirects ?? 0,
@@ -438,6 +452,9 @@ export function analyzeUrlClient(
 
   // Calibrated Hybrid Scoring
   let baseScore = 0.02;
+  if (adv.isExecutableDrop) {
+    baseScore += (adv.isUploadDropDir || adv.hasRandomHash) ? 0.88 : 0.78;
+  }
   if (brandCheck.isImpersonating) baseScore += 0.50;
   if (isIp) baseScore += 0.45;
   if (isPunycode || homoglyphsCount > 0) baseScore += 0.40;
@@ -448,6 +465,7 @@ export function analyzeUrlClient(
   if (adv.hasDoubleExtension) baseScore += 0.18;
   if (adv.hasPortObfuscation) baseScore += 0.16;
   if (adv.consonantClusterAnomaly) baseScore += 0.16;
+  if (adv.isHttpNonSsl) baseScore += 0.12;
   if (adv.charNgramScore >= 0.25) baseScore += 0.22 * adv.charNgramScore;
   if (numKeywords >= 2) baseScore += 0.24;
   else if (numKeywords === 1 && (isSuspiciousTld || brandCheck.isImpersonating || adv.hasDoubleExtension)) baseScore += 0.12;
@@ -469,10 +487,7 @@ export function analyzeUrlClient(
   }
 
   // Verified official/authority domain check (on resolved destination host)
-  const isOfficialMajor =
-    OFFICIAL_MAJOR_DOMAINS.some(d => host === d || host.endsWith(`.${d}`)) ||
-    tld === "edu" ||
-    tld === "gov";
+  const isOfficialMajor = OFFICIAL_MAJOR_DOMAINS.some(d => host === d || host.endsWith(`.${d}`));
 
   if (
     isOfficialMajor &&
@@ -480,6 +495,7 @@ export function analyzeUrlClient(
     homoglyphsCount === 0 &&
     !adv.hasUserinfoAt &&
     !adv.protocolDowngrade &&
+    !adv.isExecutableDrop &&
     !embeddedTarget
   ) {
     baseScore = 0.01;
@@ -538,6 +554,15 @@ export function analyzeUrlClient(
   // Top Explainable Factors
   const topReasons: { factor: string; text: string; severity: "critical" | "high" | "medium" | "low" | "safe" }[] = [];
 
+  if (adv.isExecutableDrop) {
+    topReasons.push({
+      factor: "executable_malware_drop",
+      text: adv.isUploadDropDir
+        ? "Malware Drop in Upload Directory: Executable binary (.exe/.bin/etc.) hosted directly inside a public upload folder."
+        : "Direct Executable / Malware Drop: URL links directly to an executable binary payload (.exe/.scr/.bin/.apk/etc.).",
+      severity: "critical"
+    });
+  }
   if (shortenerResolved && isInputShortener && riskPercentage >= 65.0) {
     topReasons.push({
       factor: "shortener_malicious_target",
@@ -634,6 +659,13 @@ export function analyzeUrlClient(
       factor: "entropy",
       text: `Elevated Shannon Entropy (${entropy}): High algorithmic randomness across path and query segments.`,
       severity: "low"
+    });
+  }
+  if (adv.isHttpNonSsl && riskPercentage >= 40.0) {
+    topReasons.push({
+      factor: "insecure_http",
+      text: "Unencrypted Transport (HTTP): Connection uses unencrypted plaintext HTTP without SSL/TLS security.",
+      severity: "medium"
     });
   }
 
